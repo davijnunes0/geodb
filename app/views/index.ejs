@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Bootstrap  -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/public.css" />
+
+    <title>GeoDB Cities Clustering</title>
+  </head>
+  <body class="d-flex flex-column align-items-center py-4 bg-light h-100">
+
+    <header class="text-center">
+      <h2 class="fw-bold">
+          <i class="bi bi-geo-alt-fill text-primary"></i>
+          GeoDB Cities K-Means Clustering
+        </h2>
+        <p class="text-muted">
+          Async API consumption, parallel data collection with Web Workers, and
+          distributed K-means clustering
+        </p>
+    </header>
+
+    <main class="w-100 m-auto px-3">
+      <div class="row g-4 mt-2">
+  
+        <div class="col-lg-6 col-md-12">
+          <div class="card shadow-sm h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+              <h4 class="card-title fw-bold mb-0">
+                <i class="bi bi-search"></i> Explore Cities
+              </h4>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <div id="error-box" role="alert"></div>
+
+              <div id="cities-list" class="mt-3 flex-grow-1" style="max-height: 500px; overflow-y: auto;"></div>
+
+              <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <button id="button-previous" type="button" class="btn btn-outline-primary">
+                  <i class="bi bi-chevron-left"></i>
+                  Previous
+                </button>
+
+                <span id="current-page" class="text-muted fw-semibold">Page 1</span>
+
+                <button id="button-next" type="button" class="btn btn-outline-primary">
+                  Next
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+  
+            </div>
+          </div>
+        </div>
+  
+        <div class="col-lg-6 col-md-12">
+          <div class="card shadow-sm h-100 border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+              <h4 class="card-title fw-bold mb-0">
+                <i class="bi bi-bookmark-check"></i> Selected Cities
+              </h4>
+              <span id="selected-count" class="badge bg-light text-dark">0</span>
+            </div>
+            <div class="card-body">
+              <div id="selected-cities-list" style="max-height: 500px; overflow-y: auto;">
+                <div class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  <p class="mb-0">No cities selected yet</p>
+                  <small>Click "Select City" to add cities here</small>
+                </div>
+              </div>
+              
+              <div id="selected-actions" class="mt-3 pt-3 border-top d-none">
+                <button id="clear-all-button" type="button" class="btn btn-outline-danger btn-sm w-100">
+                  <i class="bi bi-trash"></i> Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção de Processamento e Clustering -->
+      <div class="row g-4 mt-2">
+        <div class="col-12">
+          <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+              <h4 class="card-title fw-bold mb-0">
+                <i class="bi bi-cpu"></i> Parallel Data Processing & K-Means Clustering
+              </h4>
+            </div>
+            <div class="card-body">
+              <!-- Controles de Processamento -->
+              <div class="row mb-4">
+                <div class="col-md-3">
+                  <label for="cities-input" class="form-label fw-bold">
+                    <i class="bi bi-geo-alt"></i> Cidades a Coletar:
+                  </label>
+                  <div class="input-group">
+                    <input 
+                      type="number" 
+                      id="cities-input" 
+                      class="form-control" 
+                      min="100" 
+                      max="50000" 
+                      value="5000"
+                      step="500"
+                      placeholder="Ex: 5000"
+                    />
+                    <button 
+                      class="btn btn-outline-secondary dropdown-toggle" 
+                      type="button" 
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      title="Sugestões rápidas"
+                    >
+                      <i class="bi bi-lightning"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item" href="#" data-cities="1000">1.000 cidades (~3 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="2500">2.500 cidades (~8 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="5000">5.000 cidades (~17 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="10000">10.000 cidades (~33 min)</a></li>
+                    </ul>
+                  </div>
+                  <small class="form-text text-muted">
+                    <span id="time-estimate" class="text-info fw-semibold">~17 min</span> estimado
+                  </small>
+                </div>
+                <div class="col-md-3">
+                  <label for="k-input" class="form-label fw-bold">
+                    <i class="bi bi-diagram-3"></i> Número de Clusters (k):
+                  </label>
+                  <input 
+                    type="number" 
+                    id="k-input" 
+                    class="form-control" 
+                    min="2" 
+                    max="50" 
+                    value="5"
+                    placeholder="Digite o valor de k"
+                  />
+                  <small class="form-text text-muted">Valor entre 2 e 50</small>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <button 
+                    id="start-collection-button" 
+                    type="button" 
+                    class="btn btn-warning btn-lg me-2"
+                  >
+                    <i class="bi bi-download"></i> Iniciar Coleta
+                  </button>
+                  <button 
+                    id="start-clustering-button" 
+                    type="button" 
+                    class="btn btn-success btn-lg"
+                    disabled
+                  >
+                    <i class="bi bi-diagram-3"></i> Executar K-Means
+                  </button>
+                </div>
+              </div>
+              <div class="alert alert-info mb-3">
+                <i class="bi bi-info-circle"></i> 
+                <strong>Plano BASIC:</strong> Coleta sequencial com 2s entre requisições (~0.5 req/s). 
+                <span id="time-info">Coleta de 5k cidades levará ~17 minutos</span>. 
+                <strong>Evite usar paginação durante a coleta.</strong>
+              </div>
+
+              <!-- Barra de Progresso -->
+              <div id="progress-section" class="mb-4 d-none">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="fw-semibold">Progresso:</span>
+                  <span id="progress-text" class="text-muted">0%</span>
+                </div>
+                <div class="progress" style="height: 30px;">
+                  <div 
+                    id="progress-bar" 
+                    class="progress-bar progress-bar-striped progress-bar-animated" 
+                    role="progressbar" 
+                    style="width: 0%"
+                    aria-valuenow="0" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100"
+                  >
+                    <span id="progress-details">Aguardando...</span>
+                  </div>
+                </div>
+                <div id="progress-stats" class="mt-2 small text-muted"></div>
+              </div>
+
+              <!-- Área de Resultados dos Clusters -->
+              <div id="clusters-section" class="d-none">
+                <h5 class="fw-bold mb-3">
+                  <i class="bi bi-diagram-3-fill"></i> Resultados do Clustering
+                </h5>
+                <div id="clusters-container" style="max-height: 600px; overflow-y: auto;">
+                  <!-- Clusters serão renderizados aqui -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+
+    <script type="module" src="/js/controllers/cityController.js"></script>
+  </body>
+</html>
