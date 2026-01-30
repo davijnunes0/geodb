@@ -6,19 +6,24 @@
  */
 
 /**
- * Inicializa centroides aleatórios
- * @param {Array} points - Array de pontos
- * @param {number} k - Número de clusters
- * @returns {Array} Array de k centroides
+ * Normaliza dados usando Min-Max Normalization (Feature Scaling)
+ * Garante que todas as dimensões tenham o mesmo peso no cálculo de distância
+ * 
+ * Fórmula: x_norm = (x - min) / (max - min)
+ * Resultado: valores entre 0 e 1
+ * 
+ * @param {Array} points - Array de pontos {latitude, longitude, population}
+ * @returns {Object} Objeto com pontos normalizados e ranges originais
  */
-const initializeCentroids = (points, k) => {
-  const centroids = [];
-  const usedIndices = new Set();
+const normalizeData = (points) => {
+  if (points.length === 0) {
+    return { normalizedPoints: [], ranges: null };
+  }
 
   // Encontra ranges dos dados
   const latitudes = points.map((p) => p.latitude);
   const longitudes = points.map((p) => p.longitude);
-  const populations = points.map((p) => p.population);
+  const populations = points.map((p) => p.population || 0);
 
   const minLat = Math.min(...latitudes);
   const maxLat = Math.max(...latitudes);
@@ -27,12 +32,61 @@ const initializeCentroids = (points, k) => {
   const minPop = Math.min(...populations);
   const maxPop = Math.max(...populations);
 
-  // Gera k centroides aleatórios dentro dos ranges
+  // Calcula ranges (evita divisão por zero)
+  const rangeLat = maxLat - minLat || 1;
+  const rangeLon = maxLon - minLon || 1;
+  const rangePop = maxPop - minPop || 1;
+
+  // Normaliza cada ponto usando Min-Max
+  const normalizedPoints = points.map((point) => ({
+    ...point,
+    latitude: (point.latitude - minLat) / rangeLat,
+    longitude: (point.longitude - minLon) / rangeLon,
+    population: ((point.population || 0) - minPop) / rangePop,
+  }));
+
+  return {
+    normalizedPoints,
+    ranges: {
+      lat: { min: minLat, max: maxLat, range: rangeLat },
+      lon: { min: minLon, max: maxLon, range: rangeLon },
+      pop: { min: minPop, max: maxPop, range: rangePop },
+    },
+  };
+};
+
+/**
+ * Desnormaliza centroides para valores originais
+ * @param {Array} normalizedCentroids - Centroides normalizados
+ * @param {Object} ranges - Ranges originais dos dados
+ * @returns {Array} Centroides desnormalizados
+ */
+const denormalizeCentroids = (normalizedCentroids, ranges) => {
+  if (!ranges) return normalizedCentroids;
+
+  return normalizedCentroids.map((centroid) => ({
+    ...centroid,
+    latitude: centroid.latitude * ranges.lat.range + ranges.lat.min,
+    longitude: centroid.longitude * ranges.lon.range + ranges.lon.min,
+    population: centroid.population * ranges.pop.range + ranges.pop.min,
+  }));
+};
+
+/**
+ * Inicializa centroides aleatórios (já normalizados)
+ * @param {Array} normalizedPoints - Array de pontos normalizados
+ * @param {number} k - Número de clusters
+ * @returns {Array} Array de k centroides normalizados
+ */
+const initializeCentroids = (normalizedPoints, k) => {
+  const centroids = [];
+
+  // Como os dados já estão normalizados (0-1), podemos gerar valores aleatórios nesse range
   for (let i = 0; i < k; i++) {
     centroids.push({
-      latitude: minLat + Math.random() * (maxLat - minLat),
-      longitude: minLon + Math.random() * (maxLon - minLon),
-      population: minPop + Math.random() * (maxPop - minPop),
+      latitude: Math.random(), // 0 a 1
+      longitude: Math.random(), // 0 a 1
+      population: Math.random(), // 0 a 1
     });
   }
 
@@ -40,19 +94,18 @@ const initializeCentroids = (points, k) => {
 };
 
 /**
- * Calcula distância euclidiana entre dois pontos
- * @param {Object} point1 - Ponto 1
- * @param {Object} point2 - Ponto 2
- * @returns {number} Distância
+ * Calcula distância euclidiana entre dois pontos normalizados
+ * Como todos os valores estão entre 0 e 1, todas as dimensões têm o mesmo peso
+ * 
+ * @param {Object} point1 - Ponto 1 normalizado
+ * @param {Object} point2 - Ponto 2 normalizado
+ * @returns {number} Distância euclidiana
  */
 const euclideanDistance = (point1, point2) => {
-  const MAX_POPULATION = 50000000;
-  const normPop1 = point1.population / MAX_POPULATION;
-  const normPop2 = point2.population / MAX_POPULATION;
-
+  // Todos os valores já estão normalizados (0-1), então cálculo direto
   const latDiff = point1.latitude - point2.latitude;
   const lonDiff = point1.longitude - point2.longitude;
-  const popDiff = normPop1 - normPop2;
+  const popDiff = point1.population - point2.population;
 
   return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff + popDiff * popDiff);
 };
@@ -180,13 +233,23 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
     throw new Error(`Número de pontos (${points.length}) deve ser maior ou igual a k (${k})`);
   }
 
-  // Inicializa centroides
-  let centroids = initializeCentroids(points, k);
+  // PASSO CRÍTICO: Normaliza dados antes do clustering
+  // Isso garante que latitude, longitude e população tenham o mesmo peso
+  const { normalizedPoints, ranges } = normalizeData(points);
+  
+  console.log("📊 Normalização aplicada:", {
+    pontosOriginais: points.length,
+    ranges: ranges,
+    exemploNormalizado: normalizedPoints[0],
+  });
+
+  // Inicializa centroides (já normalizados)
+  let centroids = initializeCentroids(normalizedPoints, k);
   const numWorkers = Math.min(navigator.hardwareConcurrency || 4, 8);
 
   for (let iteration = 0; iteration < maxIterations; iteration++) {
-    // Atribui pontos aos clusters
-    const assignments = await assignPointsToClusters(points, centroids, numWorkers);
+    // Atribui pontos aos clusters (usando pontos normalizados)
+    const assignments = await assignPointsToClusters(normalizedPoints, centroids, numWorkers);
 
     // Agrupa pontos por cluster
     const clusters = Array.from({ length: k }, () => []);
@@ -194,8 +257,8 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
       clusters[assignment.centroidIndex].push(assignment.pointIndex);
     }
 
-    // Calcula novos centroides
-    const newCentroids = await calculateNewCentroids(clusters, points);
+    // Calcula novos centroides (usando pontos normalizados)
+    const newCentroids = await calculateNewCentroids(clusters, normalizedPoints);
 
     // Trata centroides nulos (clusters vazios)
     for (let i = 0; i < newCentroids.length; i++) {
@@ -204,21 +267,11 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
         if (centroids[i]) {
           newCentroids[i] = { ...centroids[i] };
         } else {
-          // Gera centroide aleatório baseado nos dados
-          const latitudes = points.map((p) => p.latitude);
-          const longitudes = points.map((p) => p.longitude);
-          const populations = points.map((p) => p.population);
-          const minLat = Math.min(...latitudes);
-          const maxLat = Math.max(...latitudes);
-          const minLon = Math.min(...longitudes);
-          const maxLon = Math.max(...longitudes);
-          const minPop = Math.min(...populations);
-          const maxPop = Math.max(...populations);
-
+          // Gera centroide aleatório normalizado (0-1)
           newCentroids[i] = {
-            latitude: minLat + Math.random() * (maxLat - minLat),
-            longitude: minLon + Math.random() * (maxLon - minLon),
-            population: minPop + Math.random() * (maxPop - minPop),
+            latitude: Math.random(),
+            longitude: Math.random(),
+            population: Math.random(),
           };
         }
       }
@@ -226,12 +279,15 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
 
     // Verifica convergência
     if (hasConverged(centroids, newCentroids)) {
+      // Desnormaliza centroides finais para retornar valores originais
+      const denormalizedCentroids = denormalizeCentroids(newCentroids, ranges);
+      
       if (onIteration) {
-        onIteration(iteration + 1, clusters, newCentroids, true);
+        onIteration(iteration + 1, clusters, denormalizedCentroids, true);
       }
       return {
         clusters,
-        centroids: newCentroids,
+        centroids: denormalizedCentroids,
         iterations: iteration + 1,
         converged: true,
       };
@@ -240,20 +296,25 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
     centroids = newCentroids;
 
     if (onIteration) {
-      onIteration(iteration + 1, clusters, centroids, false);
+      // Desnormaliza para callback (valores originais)
+      const denormalizedCentroids = denormalizeCentroids(centroids, ranges);
+      onIteration(iteration + 1, clusters, denormalizedCentroids, false);
     }
   }
 
   // Última atribuição
-  const assignments = await assignPointsToClusters(points, centroids, numWorkers);
+  const assignments = await assignPointsToClusters(normalizedPoints, centroids, numWorkers);
   const clusters = Array.from({ length: k }, () => []);
   for (const assignment of assignments) {
     clusters[assignment.centroidIndex].push(assignment.pointIndex);
   }
 
+  // Desnormaliza centroides finais
+  const denormalizedCentroids = denormalizeCentroids(centroids, ranges);
+
   return {
     clusters,
-    centroids,
+    centroids: denormalizedCentroids,
     iterations: maxIterations,
     converged: false,
   };

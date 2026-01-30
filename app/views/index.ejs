@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-100">
+<html lang="pt-BR" class="h-100">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,15 +25,19 @@
   </head>
   <body class="d-flex flex-column align-items-center py-4 bg-light h-100">
 
-    <header class="text-center">
+    <header class="text-center mb-4">
       <h2 class="fw-bold">
           <i class="bi bi-geo-alt-fill text-primary"></i>
           GeoDB Cities K-Means Clustering
         </h2>
-        <p class="text-muted">
-          Async API consumption, parallel data collection with Web Workers, and
-          distributed K-means clustering
+        <p class="text-muted mb-2">
+          Consumo assíncrono de API, coleta paralela com Web Workers e memória compartilhada,
+          e clustering K-Means distribuído
         </p>
+        <div id="shared-memory-status" class="alert alert-secondary py-2 px-3 d-inline-block mb-0" style="font-size: 0.9rem;">
+          <i class="bi bi-memory"></i> 
+          <span id="memory-status-text">Verificando memória compartilhada...</span>
+        </div>
     </header>
 
     <main class="w-100 m-auto px-3">
@@ -100,10 +104,43 @@
       <div class="row g-4 mt-2">
         <div class="col-12">
           <div class="card shadow-sm border-warning">
-            <div class="card-header bg-warning text-dark">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
               <h4 class="card-title fw-bold mb-0">
-                <i class="bi bi-cpu"></i> Parallel Data Processing & K-Means Clustering
+                <i class="bi bi-cpu"></i> Processamento Paralelo & Clustering K-Means
               </h4>
+              <button 
+                class="btn btn-sm btn-outline-dark" 
+                type="button" 
+                data-bs-toggle="collapse" 
+                data-bs-target="#tech-info"
+                aria-expanded="false"
+                title="Informações técnicas"
+              >
+                <i class="bi bi-info-circle"></i> Info Técnica
+              </button>
+            </div>
+            <div class="collapse" id="tech-info">
+              <div class="card-body bg-light border-bottom">
+                <h6 class="fw-bold mb-3"><i class="bi bi-gear"></i> Tecnologias e Conceitos Implementados:</h6>
+                <div class="row">
+                  <div class="col-md-6">
+                    <ul class="small mb-0">
+                      <li><strong>SharedArrayBuffer:</strong> Memória compartilhada entre Web Workers</li>
+                      <li><strong>Atomics API:</strong> Operações atômicas para sincronização thread-safe</li>
+                      <li><strong>Divisão e Conquista:</strong> Distribuição de trabalho entre múltiplos workers</li>
+                      <li><strong>Programação Funcional:</strong> Estado imutável e funções puras</li>
+                    </ul>
+                  </div>
+                  <div class="col-md-6">
+                    <ul class="small mb-0">
+                      <li><strong>Web Workers:</strong> Processamento paralelo em threads separadas</li>
+                      <li><strong>Async/Await:</strong> Programação assíncrona não-bloqueante</li>
+                      <li><strong>K-Means:</strong> Algoritmo de clustering paralelizado</li>
+                      <li><strong>Rate Limiting:</strong> Controle inteligente de requisições à API</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="card-body">
               <!-- Controles de Processamento -->
@@ -133,14 +170,14 @@
                       <i class="bi bi-lightning"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item" href="#" data-cities="1000">1.000 cidades (~3 min)</a></li>
-                      <li><a class="dropdown-item" href="#" data-cities="2500">2.500 cidades (~8 min)</a></li>
-                      <li><a class="dropdown-item" href="#" data-cities="5000">5.000 cidades (~17 min)</a></li>
-                      <li><a class="dropdown-item" href="#" data-cities="10000">10.000 cidades (~33 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="1000">1.000 cidades (~42 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="2500">2.500 cidades (~104 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="5000">5.000 cidades (~208 min)</a></li>
+                      <li><a class="dropdown-item" href="#" data-cities="10000">10.000 cidades (~417 min)</a></li>
                     </ul>
                   </div>
                   <small class="form-text text-muted">
-                    <span id="time-estimate" class="text-info fw-semibold">~17 min</span> estimado
+                    <span id="time-estimate" class="text-info fw-semibold">~208 min</span> estimado (plano BASIC)
                   </small>
                 </div>
                 <div class="col-md-3">
@@ -177,10 +214,21 @@
                 </div>
               </div>
               <div class="alert alert-info mb-3">
-                <i class="bi bi-info-circle"></i> 
-                <strong>Plano BASIC:</strong> Coleta sequencial com 2s entre requisições (~0.5 req/s). 
-                <span id="time-info">Coleta de 5k cidades levará ~17 minutos</span>. 
-                <strong>Evite usar paginação durante a coleta.</strong>
+                <div class="d-flex align-items-start">
+                  <i class="bi bi-info-circle me-2 mt-1"></i>
+                  <div>
+                    <strong>Coleta Paralela com Memória Compartilhada:</strong>
+                    <ul class="mb-0 mt-2 small">
+                      <li>Web Worker coletando dados usando <strong>SharedArrayBuffer</strong> (1 worker para plano BASIC)</li>
+                      <li>Escrita controlada com <strong>Atomics</strong> para garantir thread-safety</li>
+                      <li>Algoritmo de <strong>divisão e conquista</strong> preparado para múltiplos workers</li>
+                      <li>Rate limiting conservador: ~2.5s entre requisições (plano BASIC: 1 req/s)</li>
+                      <li><span id="time-info">Coleta de 5k cidades levará ~208 minutos (plano BASIC)</span></li>
+                      <li class="text-warning"><strong>⚠️ Plano BASIC tem limite muito restritivo. Para testes rápidos, use 100-500 cidades.</strong></li>
+                      <li class="text-danger"><strong>⚠️ Evite usar paginação durante a coleta para não exceder rate limits</strong></li>
+                    </ul>
+                  </div>
+                </div>
               </div>
 
               <!-- Barra de Progresso -->
@@ -203,13 +251,22 @@
                   </div>
                 </div>
                 <div id="progress-stats" class="mt-2 small text-muted"></div>
+                <div id="memory-info" class="mt-2 small text-info d-none">
+                  <i class="bi bi-memory"></i> 
+                  <span id="memory-info-text">Usando memória compartilhada (SharedArrayBuffer)</span>
+                </div>
               </div>
 
               <!-- Área de Resultados dos Clusters -->
               <div id="clusters-section" class="d-none">
-                <h5 class="fw-bold mb-3">
-                  <i class="bi bi-diagram-3-fill"></i> Resultados do Clustering
-                </h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="fw-bold mb-0">
+                    <i class="bi bi-diagram-3-fill"></i> Resultados do Clustering K-Means
+                  </h5>
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Agrupamento baseado em: Latitude, Longitude e População
+                  </small>
+                </div>
                 <div id="clusters-container" style="max-height: 600px; overflow-y: auto;">
                   <!-- Clusters serão renderizados aqui -->
                 </div>
@@ -228,5 +285,37 @@
     ></script>
 
     <script type="module" src="/js/controllers/cityController.js"></script>
+    
+    <!-- Script para verificar status de memória compartilhada -->
+    <script>
+      // Verifica disponibilidade de SharedArrayBuffer
+      (function() {
+        const statusDiv = document.getElementById('shared-memory-status');
+        const statusText = document.getElementById('memory-status-text');
+        
+        if (typeof SharedArrayBuffer !== 'undefined') {
+          statusDiv.className = 'alert alert-success py-2 px-3 d-inline-block mb-0';
+          statusText.innerHTML = '<strong>✅ Memória Compartilhada Disponível</strong> - SharedArrayBuffer ativo';
+          
+          // Testa se Atomics também está disponível
+          try {
+            const sab = new SharedArrayBuffer(1024);
+            const view = new Int32Array(sab);
+            Atomics.store(view, 0, 1);
+            const value = Atomics.load(view, 0);
+            
+            if (value === 1) {
+              statusText.innerHTML += ' | Atomics funcionando';
+            }
+          } catch (e) {
+            statusDiv.className = 'alert alert-warning py-2 px-3 d-inline-block mb-0';
+            statusText.innerHTML = '⚠️ SharedArrayBuffer disponível mas com limitações';
+          }
+        } else {
+          statusDiv.className = 'alert alert-warning py-2 px-3 d-inline-block mb-0';
+          statusText.innerHTML = '⚠️ Memória Compartilhada Não Disponível - Usando fallback (postMessage)';
+        }
+      })();
+    </script>
   </body>
 </html>

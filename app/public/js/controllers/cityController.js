@@ -63,6 +63,8 @@ const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
 const progressDetails = document.getElementById("progress-details");
 const progressStats = document.getElementById("progress-stats");
+const memoryInfo = document.getElementById("memory-info");
+const memoryInfoText = document.getElementById("memory-info-text");
 const clustersSection = document.getElementById("clusters-section");
 const clustersContainer = document.getElementById("clusters-container");
 
@@ -75,7 +77,7 @@ const updateTimeEstimate = () => {
   
   const targetCities = parseInt(citiesInput.value, 10) || 5000;
   const limitPerPage = 10;
-  const delayPerPage = 2; // segundos (1.5s base + 0.5s margem)
+  const delayPerPage = 2.5; // segundos (2s base + 0.5s margem) - plano BASIC: 1 req/s
   
   const totalPages = Math.ceil(targetCities / limitPerPage);
   const totalSeconds = totalPages * delayPerPage;
@@ -406,10 +408,21 @@ const handleStartCollection = async () => {
     progressSection.classList.remove("d-none");
     clustersSection.classList.add("d-none");
 
+    // Verifica e mostra status de memória compartilhada
+    const useSharedMemory = typeof SharedArrayBuffer !== 'undefined';
+    if (useSharedMemory) {
+      memoryInfo.classList.remove("d-none");
+      memoryInfoText.textContent = "Usando memória compartilhada (SharedArrayBuffer) com sincronização Atomics";
+    } else {
+      memoryInfo.classList.add("d-none");
+    }
+
     // Atualiza progresso inicial
     progressBar.style.width = "0%";
     progressText.textContent = "0%";
-    progressDetails.textContent = "Iniciando coleta paralela...";
+    progressDetails.textContent = useSharedMemory 
+      ? "Iniciando coleta paralela com memória compartilhada..." 
+      : "Iniciando coleta paralela (modo fallback)...";
     progressStats.textContent = "";
 
     // Obtém número de cidades do input (padrão: 5000)
@@ -441,7 +454,8 @@ const handleStartCollection = async () => {
         progressBar.classList.add("bg-warning");
       }
       
-      progressStats.textContent = `Workers: ${stats.workers} | Página atual: ${stats.currentPage || 0}/${stats.totalPages || 0}`;
+      const memoryStatus = typeof SharedArrayBuffer !== 'undefined' ? ' | Memória Compartilhada: Ativa' : ' | Modo: Fallback';
+      progressStats.textContent = `Workers: ${stats.workers} | Página atual: ${stats.currentPage || 0}/${stats.totalPages || 0}${memoryStatus}`;
     });
 
     // Calcula tempo decorrido
@@ -456,13 +470,19 @@ const handleStartCollection = async () => {
     // Finaliza progresso
     progressBar.style.width = "100%";
     progressText.textContent = "100%";
-    progressDetails.textContent = "Coleta concluída!";
+    progressDetails.textContent = "Coleta concluída! Iniciando agrupamento K-Means...";
     progressStats.textContent = `Total coletado: ${collectedCities.length} cidades válidas | Tempo: ${timeString}`;
 
-    // Habilita botão de clustering
-    startClusteringButton.disabled = false;
-
-    alert(`Coleta concluída! ${collectedCities.length} cidades coletadas em ${timeString}.`);
+    // REQUISITO: Após finalizar o processo de preenchimento da memória compartilhada,
+    // inicia-se o processo de agrupamento automaticamente
+    // Não espera clique do usuário, inicia imediatamente após coleta
+    console.log(`Coleta concluída! ${collectedCities.length} cidades coletadas em ${timeString}. Iniciando K-Means automaticamente...`);
+    
+    // Inicia K-Means automaticamente após coleta
+    // Usa um pequeno delay para garantir que a UI seja atualizada
+    setTimeout(() => {
+      handleStartClustering();
+    }, 500);
   } catch (error) {
     console.error("Erro na coleta:", error);
     

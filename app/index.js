@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("node:path");
 const webRouter = require("./routes/web");
@@ -24,6 +25,15 @@ app.set("views", path.join(__dirname, "views"));
 // @see https://expressjs.com/en/5x/api.html#express.urlencoded
 app.use(express.urlencoded({ extended: true }));
 
+// Headers necessários para SharedArrayBuffer
+// SharedArrayBuffer requer Cross-Origin-Opener-Policy e Cross-Origin-Embedder-Policy
+// @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  next();
+});
+
 // Middleware para servir arquivos estáticos da pasta 'public'
 // @see https://expressjs.com/en/starter/static-files.html
 // Usa path.join para garantir caminho correto no Docker
@@ -32,6 +42,10 @@ app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      // Desabilita cache para arquivos JS durante desenvolvimento
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     }
   }
 }));

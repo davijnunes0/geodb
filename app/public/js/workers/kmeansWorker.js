@@ -6,24 +6,20 @@
  */
 
 /**
- * Calcula distância euclidiana entre dois pontos
- * Considera: latitude, longitude e população (normalizada)
+ * Calcula distância euclidiana entre dois pontos normalizados
+ * IMPORTANTE: Esta função assume que os pontos já foram normalizados (0-1)
+ * usando Min-Max normalization. Todas as dimensões têm o mesmo peso.
  * 
- * @param {Object} point1 - Ponto 1 {latitude, longitude, population}
- * @param {Object} point2 - Ponto 2 {latitude, longitude, population}
+ * @param {Object} point1 - Ponto 1 normalizado {latitude, longitude, population}
+ * @param {Object} point2 - Ponto 2 normalizado {latitude, longitude, population}
  * @returns {number} Distância euclidiana
  */
 const euclideanDistance = (point1, point2) => {
-  // Normaliza população para escala similar (0-1)
-  // Assumindo população máxima de 50 milhões
-  const MAX_POPULATION = 50000000;
-  const normPop1 = point1.population / MAX_POPULATION;
-  const normPop2 = point2.population / MAX_POPULATION;
-
-  // Calcula distância considerando as três dimensões
+  // Como os dados já estão normalizados (0-1), cálculo direto
+  // Todas as dimensões têm o mesmo peso no cálculo
   const latDiff = point1.latitude - point2.latitude;
   const lonDiff = point1.longitude - point2.longitude;
-  const popDiff = normPop1 - normPop2;
+  const popDiff = point1.population - point2.population;
 
   return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff + popDiff * popDiff);
 };
