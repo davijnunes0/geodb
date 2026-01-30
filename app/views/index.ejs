@@ -224,8 +224,8 @@
                       <li>Algoritmo de <strong>divisão e conquista</strong> preparado para múltiplos workers</li>
                       <li>Rate limiting conservador: ~2.5s entre requisições (plano BASIC: 1 req/s)</li>
                       <li><span id="time-info">Coleta de 5k cidades levará ~208 minutos (plano BASIC)</span></li>
-                      <li class="text-warning"><strong>⚠️ Plano BASIC tem limite muito restritivo. Para testes rápidos, use 100-500 cidades.</strong></li>
-                      <li class="text-danger"><strong>⚠️ Evite usar paginação durante a coleta para não exceder rate limits</strong></li>
+                      <li class="text-warning"><strong>Plano BASIC tem limite muito restritivo. Para testes rápidos, use 100-500 cidades.</strong></li>
+                      <li class="text-danger"><strong>Evite usar paginação durante a coleta para não exceder rate limits</strong></li>
                     </ul>
                   </div>
                 </div>
@@ -295,7 +295,7 @@
         
         if (typeof SharedArrayBuffer !== 'undefined') {
           statusDiv.className = 'alert alert-success py-2 px-3 d-inline-block mb-0';
-          statusText.innerHTML = '<strong>✅ Memória Compartilhada Disponível</strong> - SharedArrayBuffer ativo';
+          statusText.innerHTML = '<strong>Memória Compartilhada Disponível</strong> - SharedArrayBuffer ativo';
           
           // Testa se Atomics também está disponível
           try {
@@ -309,11 +309,11 @@
             }
           } catch (e) {
             statusDiv.className = 'alert alert-warning py-2 px-3 d-inline-block mb-0';
-            statusText.innerHTML = '⚠️ SharedArrayBuffer disponível mas com limitações';
+            statusText.innerHTML = 'SharedArrayBuffer disponível mas com limitações';
           }
         } else {
           statusDiv.className = 'alert alert-warning py-2 px-3 d-inline-block mb-0';
-          statusText.innerHTML = '⚠️ Memória Compartilhada Não Disponível - Usando fallback (postMessage)';
+          statusText.innerHTML = 'Memória Compartilhada Não Disponível - Usando fallback (postMessage)';
         }
       })();
     </script>

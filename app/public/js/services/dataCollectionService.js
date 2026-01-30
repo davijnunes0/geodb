@@ -264,7 +264,7 @@ export const collectCitiesParallel = async (targetCities = 10000, limitPerPage =
           }
         }
         
-        console.log(`🔍 Duplicatas removidas: ${allCities.length} → ${uniqueCitiesById.length} (por ID) → ${uniqueCities.length} (por nome+coord)`);
+        console.log(`Duplicatas removidas: ${allCities.length} -> ${uniqueCitiesById.length} (por ID) -> ${uniqueCities.length} (por nome+coord)`);
 
         // Atualiza progresso final
         if (onProgress) {
@@ -411,7 +411,7 @@ const collectCitiesParallelFallback = async (targetCities = 10000, limitPerPage 
           }
         }
         
-        console.log(`🔍 Duplicatas removidas (fallback): ${allCities.length} → ${uniqueCities.length}`);
+        console.log(`Duplicatas removidas (fallback): ${allCities.length} -> ${uniqueCities.length}`);
         resolve(uniqueCities);
       }
     }, 100);

@@ -237,7 +237,7 @@ export const kmeans = async (points, k, maxIterations = 100, onIteration) => {
   // Isso garante que latitude, longitude e população tenham o mesmo peso
   const { normalizedPoints, ranges } = normalizeData(points);
   
-  console.log("📊 Normalização aplicada:", {
+  console.log("Normalização aplicada:", {
     pontosOriginais: points.length,
     ranges: ranges,
     exemploNormalizado: normalizedPoints[0],
